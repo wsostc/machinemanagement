@@ -1,0 +1,45 @@
+/**
+ * @author Chris Board - Boardies IT Solutons
+ * @description Creates a 3-dot context menu on tables, <p> tags and heading tags (e.g. h1, h2 etc).
+ * @copyright (c) Boardies IT Solutions - December 2017
+ */
+
+.context-menu
+{
+    cursor: pointer;
+    pointer-events: all;
+}
+
+.context-menu-container
+{
+    background-color: #6396b5;
+    z-index: 1000 !important;
+    border-radius: 5px;
+    position: absolute;
+    display: none;
+    border: solid thin black;
+    padding: 3px;
+    -webkit-box-shadow: 4px 4px 8px 0px rgba(0,0,0,0.18);
+    -moz-box-shadow: 4px 4px 8px 0px rgba(0,0,0,0.18);
+    box-shadow: 4px 4px 8px 0px rgba(0,0,0,0.18);
+    min-width: 90px;
+}
+
+.context-menu-container > ul
+{
+    margin: 0;
+    padding: 0;
+    list-style-type: none;
+}
+
+.context-menu-container > ul > li
+{
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 10px;
+}
+
+.context-menu-container > ul > li:hover
+{
+    background-color:#0066FF;
+}

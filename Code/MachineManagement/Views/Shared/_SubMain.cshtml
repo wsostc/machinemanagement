@@ -1,0 +1,142 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>@Html.Raw(DatabaseObject.Domain.Constants.SYSTEM_NAME)</title>
+    <link rel="stylesheet" type="text/css" href="~/Content/Css/jquery-ui.css" />
+    <link rel="stylesheet" type="text/css" href="~/Content/Css/jquery.alerts.css" />
+    <link rel="stylesheet" type="text/css" href="~/Content/Css/style.css" />
+    <link rel="stylesheet" type="text/css" href="~/Content/Css/jquery.pager.css" />
+
+    <script src="~/Content/Scripts/jquery-1.11.0.js"></script>
+    <script src="~/Content/Scripts/common.js"></script>
+    <script src="~/Content/Scripts/jquery-ui.js"></script>
+    <script src="~/Content/Scripts/jquery.alerts.js"></script>
+    <script src="~/Content/Scripts/Site.js"></script>
+    <script src="~/Content/Scripts/js.DateTime.js"></script>
+    <script src="~/Content/Scripts/jquery.pager.js"></script>
+
+    <script type="text/javascript">
+    //禁止页面后退
+    //javascript: window.history.forward(1);
+    </script>
+</head>
+
+<body>
+    <ul class="mainHeaderBar">
+        <li>
+            <p class="headerTitle" >@Html.Raw(DatabaseObject.Domain.Constants.SYSTEM_NAME)</p>
+        </li>
+
+        @Html.Action("Menu", "Home")
+
+        @{ DatabaseObject.Domain.UserInfo user = (DatabaseObject.Domain.UserInfo)Session[MachineManagement.Controllers.BaseController.SESSION_USER]; }
+        <li class="mainHeaderRight">
+            Welcome @user.Name &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <a class="imageButton" onclick="btnEditPwdClicked()">Change Password</a>&nbsp;&nbsp;&nbsp;
+            <a class="imageButton" href="@Url.Action(MachineManagement.App_Start.ConstDefinition.HOME_ACTION, MachineManagement.App_Start.ConstDefinition.HOME_CONTROLLER)" target="_top">Logout</a>
+        </li>
+    </ul>
+
+    <!--content-->
+    <div class="mainFrame">@RenderBody()</div>
+
+    <!--footer-->
+    <footer>
+        <table style="width:inherit;">
+            <tr>
+                <td style="text-align:center; white-space:nowrap;">@Html.Raw(DatabaseObject.Domain.Constants.SYSTEM_NAME)</td>
+            </tr>
+        </table>
+    </footer>
+
+    <div id="dialog-form-EditPwd" title="Change Password" style="display: none;" class="ui-dialog-content ui-widget-content">
+        <table cellspacing="7">
+            <tr>
+                <td><span class="required">*</span>Login Account:</td>
+                <td><label id="lblUserLoginID">@Html.Raw(user.LoginID)</label></td>
+                <td><input type="hidden" id="UserID_FormEditPwd" value="@Html.Raw(user.ID)" /></td>
+            </tr>
+            <tr>
+                <td><span class="required">*</span>New Password:</td>
+                <td><input type="password" id="UserPwd_FormEditPwd" maxlength="50" /> </td>
+                <td><label class="required" id="reqUserPwd_FormEditPwd"></label></td>
+            </tr>
+            <tr>
+                <td><span class="required">*</span>Confirm Password:</td>
+                <td><input type="password" id="reUserPwd_FormEditPwd" maxlength="50" /> </td>
+                <td><label class="required" id="reqReUserPwd_FormEditPwd"></label></td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>
+
+<script>
+    $().ready(function () {
+        $.ajaxSetup({
+            cache: false
+        });
+
+        var dialogEditPwd = $("#dialog-form-EditPwd").dialog({
+            autoOpen: false,
+            height: 300,
+            width: 550,
+            modal: true,
+            buttons: {
+                "Save": function () { UpdatePassword(); },
+                "Close": function () { dialogEditPwd.dialog("close"); }
+            }
+        });
+    });
+
+    function btnEditPwdClicked() {
+        $("#reqUserPwd_FormEditPwd").html("");
+        $("#reqReUserPwd_FormEditPwd").html("");
+
+        $("#UserPwd_FormEditPwd").val("");
+        $("#reUserPwd_FormEditPwd").val("");
+
+        $("#dialog-form-EditPwd").dialog("open");
+    }
+
+    function UpdatePassword() {
+        if (CheckLoginPwd("UserPwd_FormEditPwd") == false) return;
+
+        $.post('@Url.Action("UpdatePassword","User")', {
+            id: $("#UserID_FormEditPwd").val(),
+            loginPwd: $.trim($("#UserPwd_FormEditPwd").val())
+        }, function (response) {
+            if (!response.IsValid) {
+                processResponseError(response.ErrorMessage);
+            } else {
+                jAlert("Saved Successfully", "SAVE", function () {
+                    $("#dialog-form-EditPwd").dialog("close");
+                });
+            }
+        });
+    }
+
+    function CheckLoginPwd(LoginPwdElementId) {
+        $("#req" + LoginPwdElementId).html("");
+        $("#reqRe" + LoginPwdElementId).html("");
+
+        var IsError = true;
+
+        var loginPwd = $.trim($("#" + LoginPwdElementId).val());
+        if (loginPwd == "") {
+            $("#req" + LoginPwdElementId).html("Please enter your password");
+            $("#" + LoginPwdElementId).focus();
+            IsError = false;
+        }
+
+        var reloginPwd = $.trim($("#re" + LoginPwdElementId).val());
+        if (loginPwd != reloginPwd) {
+            $("#reqRe" + LoginPwdElementId).html("The passwords are inconsistent, please re-enter");
+            $("#re" + LoginPwdElementId).html("");
+            $("#re" + LoginPwdElementId).focus();
+            IsError = false;
+        }
+        return IsError;
+    }
+</script>

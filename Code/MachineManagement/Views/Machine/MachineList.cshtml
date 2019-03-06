@@ -1,0 +1,243 @@
+﻿@{
+    ViewBag.Title = "MachineList";
+    Layout = "~/Views/Shared/_SubMain.cshtml";
+}
+
+@{ 
+    var user = (DatabaseObject.Domain.UserInfo)Session[MachineManagement.Controllers.BaseController.SESSION_USER];
+    var OSTypes = DatabaseObject.Manager.LookupManager.GetOSTypes();
+    var ServerTypes = DatabaseObject.Manager.LookupManager.GetServerTypes();
+    var Statuese = DatabaseObject.Manager.LookupManager.GetStatuese();
+}
+
+<!-- Machine List -->
+<div id="content">
+    <div class="tblCon">
+        <h3 class="tblTitle">Machine List</h3>
+        <table class="tblBar" align="center" width="1200">
+            <tr>
+                <td>
+                    Status：&nbsp;
+                    <select id="SelectedStatus" onchange="LoadMachineList()">
+                        <option value="0">All</option>
+                        @foreach (var temp in Statuese)
+                        {
+                            <option value="@temp.ID">@temp.Name</option>
+                        }
+                    </select>
+                </td>
+                <td width="410">
+                    Query：&nbsp;
+                    <select id="SelectedQuery" style="min-width: 130px; ">
+                        <option value="">MachineName</option>
+                        <option value="">IP</option>
+                        <option value="">OS</option>
+                        <option value="">server</option>
+                    </select>&nbsp;
+                    <input type="text" id="txtQuery" onkeydown="DoQuery()" maxlength="50" />
+                </td>
+                <td>
+                    <img class="cursor" id="btnQuery" src="~/Content/img/query.png" onclick="LoadMachineList()" />
+                </td>
+                <td width="250"></td>
+                <td>
+                    <button id="btnAdd" class="button buttonRight" style="display:none;">Add Machine</button>
+                </td>
+            </tr>
+        </table>
+        <table class="tblList" width="1200" border="1" bordercolor="38AAEF" cellpadding="0" cellspacing="0" style="text-align: center;">
+            <tr>
+                <td class="listTitle">OS</td>
+                <td class="listTitle">Machine Name</td>
+                <td class="listTitle">IP</td>
+                <td class="listTitle">Server</td>
+                <td class="listTitle" width="110">Status</td>
+                <td class="listTitle">Latest Update Time</td>
+                <td class="listTitle" width="110">Comments</td>
+                <td class="listTitle" width="80">EDIT</td>
+                @if (user.IsAdmin)
+                {
+                    <td class="listTitle" width="80">DEL</td>
+                }
+            </tr>
+            <tbody id="ListBody"></tbody>
+            <tr>
+                <td colspan="9" style="padding:5px;">
+                    <div id="pager"></div>
+                    <input type="hidden" id="totalPages" value="1" />
+                    <input type="hidden" id="currentPage" value="1" />
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<!-- New Machine -->
+<div id="dialog-form-Add" title="New Users" style="display: none;" class="ui-dialog-content ui-widget-content">
+    <table cellspacing="7" cellpadding="0" style="white-space:nowrap;">
+        <tr>
+            <td><input type="hidden" id="ID" value="0" /></td>
+        </tr>
+        <tr>
+            <td><span class="required">*</span>OS:</td>
+            <td>
+                <select id="SelectedOSType" onchange="OnchangeOS()">
+                    @foreach (var temp in OSTypes)
+                    {
+                        <option value="@temp.ID">@temp.Name</option>
+                    }
+                </select>
+                <select id="SelectedOS">
+                    <!-- js append options: function name: OnchangeOS() -->
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td><span class="required">*</span>Server:</td>
+            <td>
+                <select id="SelectedServerType" onchange="OnchangeServer()">
+                    @foreach (var temp in ServerTypes)
+                    {
+                        <option value="@temp.ID">@temp.Name</option>
+                    }
+                </select>
+                <select id="SelectedServer" onchange="">
+                    <!-- js append options: function name: OnchangeServer() -->
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td><span class="required">*</span>Machine Name:</td>
+            <td>
+                <input type="text" id="Name" maxlength="50" />
+                <label id="reqName" class="required"></label>
+            </td>
+        </tr>
+        <tr>
+            <td><span class="required">*</span>Status:</td>
+            <td>
+                <select id="SelectedOS" onchange="">
+                    @foreach (var temp in Statuese)
+                    {
+                        <option value="@temp.ID">@temp.Name</option>
+                    }
+                </select>
+            </td>
+        </tr>
+
+        <tr>
+            <td>&nbsp;&nbsp;&nbsp;&nbsp;User:</td>
+            <td>
+                <select id="SelectedUser" onchange="">
+                    <option value="0"></option>
+                    <!-- js append options, nonroot user only select himself -->
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>&nbsp;&nbsp;&nbsp;&nbsp;Comments:</td>
+            <td><textarea cols="50" rows="3" id="Comments" maxlength="500"> </textarea></td>
+        </tr>
+        <tr><td>&nbsp;</td></tr>
+        <tr>
+            <td class="tblComment" colspan="3">
+                &nbsp;<span class="required">*</span>&nbsp;Marked with required fields.
+            </td>
+        </tr>
+    </table>
+</div>
+
+<script type="text/javascript">
+    $().ready(function () {
+        InitForm();
+        //LoadMachineList();
+    });
+
+    function InitForm() {
+        var dialog = $("#dialog-form-Add").dialog({
+            autoOpen: false,
+            height: 480,
+            width: 630,
+            modal: true,
+            buttons: {
+                "Save": function () { SaveMachine(); },
+                "Close": function () { dialog.dialog("close"); }
+            }
+        });
+
+        //page set
+        $("#pager").pager({
+            pagenumber: $("#currentPage").val(),
+            pagecount: $("#totalPages").val(),
+            buttonClickCallback: PageClick
+        });
+
+        if('@user.IsAdmin' == 'True')
+        {
+            $("#btnAdd").show();
+            $("#btnAdd").on("click", function () {
+                //InitDialogForm();
+                $("#dialog-form-Add").dialog({ title: $("#btnAdd").text() });
+                $("#dialog-form-Add").dialog("open");
+            });
+        }
+    }
+
+    function PageClick(pageclickednumber) {
+        $("#currentPage").val(pageclickednumber);
+        LoadMachineList();
+    }
+
+    function DoQuery()
+    {
+        if (event.keyCode == 13)// Entry event
+            LoadMachineList();
+    }
+
+    function LoadMachineList() {
+
+        SetPageWaiting(true);
+        $.get('@Url.Action("QueryMachineList", "Machine")', {
+            filterField: $("#SelectedQuery").val(),
+            filterText: $.trim($("#txtQuery").val()),
+
+
+            currentPage: parseInt($("#currentPage").val())
+        }, function (response) {
+            SetPageWaiting(false);
+            response = JSON.parse(JSON.stringify(response));
+            if (!response.IsValid) {
+                processResponseError(response.ErrorMessage);
+            } else {
+                var htmlStr = "";
+                var UserList = JSON.parse(response.JsonObject);
+                if (UserList.length > 0) {
+                    $.each(UserList, function (idx, info) {
+                        htmlStr += '<tr class="listItem">';
+                        htmlStr += '  <td class="tdListLeft">' + '</td>';
+                        htmlStr += '  <td class="tdListLeft">' + '</td>';
+                        htmlStr += '  <td class="tdListLeft">' + '</td>';
+                        htmlStr += '  <td class="tdListCenter">' + '</td>';
+                        htmlStr += '  <td class="tdListCenter">' + '</td>';
+                        htmlStr += '  <td class="tdListCenter">' + '</td>';
+                        htmlStr += '  <td class="tdListCenter">' + '</td>';
+                        htmlStr += '  <td class="tdListCenter"><img src="' + getRootPath() + '/Content/img/btn_edit.gif" class="cursor" onclick="btnEditUserClicked(' + info.ID + ')" /></td>';
+                        if ('@user.IsAdmin' == 'True') {
+                            htmlStr += '  <td class="tdListCenter"><img src="' + getRootPath() + '/Content/img/btn_delete.gif" class="cursor" onclick="btnDeleteUserClicked(' + info.ID + ')" /></td>';
+                        }
+                        htmlStr += '</tr>';
+                    });
+                }else {
+                    htmlStr += '<tr class="listItem">';
+                    htmlStr += '    <td colspan="8" class="tdListCenter">No information</td>';
+                    htmlStr += '</tr>';
+                }
+                $("#ListBody").html(htmlStr);
+
+                SetTotalPage4Pager(response.TotalPages);
+            }
+        });
+    }
+
+  
+</script>

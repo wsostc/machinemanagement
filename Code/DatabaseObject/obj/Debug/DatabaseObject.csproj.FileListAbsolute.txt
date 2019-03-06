@@ -1,0 +1,5 @@
+C:\Users\scxsvc\Desktop\New folder\MachineManagement\Code\DatabaseObject\bin\Debug\DatabaseObject.dll
+C:\Users\scxsvc\Desktop\New folder\MachineManagement\Code\DatabaseObject\bin\Debug\DatabaseObject.pdb
+C:\Users\scxsvc\Desktop\New folder\MachineManagement\Code\DatabaseObject\obj\Debug\DatabaseObject.dll
+C:\Users\scxsvc\Desktop\New folder\MachineManagement\Code\DatabaseObject\obj\Debug\DatabaseObject.pdb
+C:\Users\scxsvc\Desktop\New folder\MachineManagement\Code\DatabaseObject\obj\Debug\DatabaseObject.csprojResolveAssemblyReference.cache

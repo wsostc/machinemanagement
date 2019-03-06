@@ -1,0 +1,397 @@
+﻿@{
+    ViewBag.Title = "UserList";
+    Layout = "~/Views/Shared/_SubMain.cshtml";
+}
+
+@{ var user = (DatabaseObject.Domain.UserInfo)Session[MachineManagement.Controllers.BaseController.SESSION_USER]; }
+
+<!-- User List -->
+<div id="content">
+    <div class="tblCon">
+        <h3 class="tblTitle">User List</h3>
+        <table class="tblBar" align="center" width="1200">
+            <tr>
+                <td width="410">
+                    Query：&nbsp;
+                    <select id="SelectedQuery" style="min-width: 130px; ">
+                        <option value="Name">Name</option>
+                        <option value="Email">Email</option>
+                    </select>&nbsp;
+                    <input type="text" id="txtQuery" onkeydown="DoQuery()" maxlength="50" />
+                </td>
+                <td>
+                    <img class="cursor" id="btnQuery" src="~/Content/img/query.png" onclick="LoadUserList()" />
+                </td>
+                <td width="250"></td>
+                <td>
+                    <button id="btnAdd" class="button buttonRight" style="display:none;">Add User</button>
+                </td>
+            </tr>
+        </table>
+        <table class="tblList" width="1200" border="1" bordercolor="38AAEF" cellpadding="0" cellspacing="0" style="text-align: center;">
+            <tr>
+                <td class="listTitle">Account</td>
+                <td class="listTitle">Name</td>
+                <td class="listTitle">Email</td>
+                <td class="listTitle">Role</td>
+                <td class="listTitle" width="110">CreatedDate</td>
+                @if (user.IsAdmin)
+                {
+                    <td class="listTitle" width="80">EDIT</td>
+                    <td class="listTitle" width="80">DEL</td>
+                }
+            </tr>
+            <tbody id="ListBody"></tbody>
+            <tr>
+                <td colspan="7" style="padding:5px;">
+                    <div id="pager"></div>
+                    <input type="hidden" id="totalPages" value="1" />
+                    <input type="hidden" id="currentPage" value="1" />
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<!-- New Users -->
+<div id="dialog-form-Add" title="New Users" style="display: none;" class="ui-dialog-content ui-widget-content">
+    <table cellspacing="7" cellpadding="0" style="white-space:nowrap;">
+        <tr>
+            <td><input type="hidden" id="ID" value="0"/></td>
+        </tr>
+        <tr>
+            <td><span class="required">*</span>Login Account:</td>
+            <td>
+                <input type="text" id="LoginID" maxlength="50" style="width:300px;" />
+                <label id="reqLoginID" class="required"></label>
+            </td>
+        </tr>
+        <tr id="trUpdateLoginPwd">
+            <td>&nbsp;&nbsp;&nbsp;&nbsp;Change Password<input type="hidden" id="IsUpdatePassword" /></td>
+            <td><input type="checkbox" id="IsCheckedUpdateLoginPwd" onclick="btnEditLoginPwd()" /> </td>
+        </tr>
+        <tr id="trLoginPwd">
+            <td><span class="required">*</span>Password:</td>
+            <td>
+                <input type="password" id="LoginPwd" maxlength="20" />
+                <label id="reqLoginPwd" class="required"></label>
+            </td>
+        </tr>
+        <tr id="trReLoginPwd">
+            <td><span class="required">*</span>Confirm Password:</td>
+            <td>
+                <input type="password" id="ReLoginPwd" maxlength="20" />
+                <label class="required" id="reqReLoginPwd"></label>
+            </td>
+        </tr>
+        <tr>
+            <td><span class="required">*</span>Role:</td>
+            <td>
+                <input type="radio" name="IsAdmin" value="1" />&nbsp;Administrator&nbsp;&nbsp;
+                <input type="radio" name="IsAdmin" value="0" />&nbsp;other
+            </td>
+        </tr>
+        <tr>
+            <td><span class="required">*</span>Name:</td>
+            <td>
+                <input type="text" id="Name" maxlength="50" />
+                <label id="reqName" class="required"></label>
+            </td>
+        </tr>
+        <tr>
+            <td>&nbsp;&nbsp;&nbsp;&nbsp;Email:</td>
+            <td>
+                <input type="text" id="Email" maxlength="50" style="width:300px;" />
+                <label id="reqEmail" class="required"></label>
+            </td>
+        </tr>
+        <tr><td>&nbsp;</td></tr>
+        <tr>
+            <td class="tblComment" colspan="3">
+                &nbsp;<span class="required">*</span>&nbsp;Marked with required fields, login account recommended as MS Alias.
+            </td>
+        </tr>
+    </table>
+</div>
+
+<script type="text/javascript">
+    $().ready(function () {
+        InitForm();
+        LoadUserList();
+    });
+
+    function InitForm() {
+        var dialog = $("#dialog-form-Add").dialog({
+            autoOpen: false,
+            height: 480,
+            width: 630,
+            modal: true,
+            buttons: {
+                "Save": function () { SaveUser(); },
+                "Close": function () { dialog.dialog("close"); }
+            }
+        });
+
+        //page set
+        $("#pager").pager({
+            pagenumber: $("#currentPage").val(),
+            pagecount: $("#totalPages").val(),
+            buttonClickCallback: PageClick
+        });
+
+        if('@user.IsAdmin' == 'True')
+        {
+            $("#btnAdd").show();
+            $("#btnAdd").on("click", function () {
+                InitDialogForm();
+                $("#dialog-form-Add").dialog({ title: $("#btnAdd").text() });
+                $("#dialog-form-Add").dialog("open");
+            });
+        }
+    }
+
+    function PageClick(pageclickednumber) {
+        $("#currentPage").val(pageclickednumber);
+        LoadUserList();
+    }
+
+    function DoQuery()
+    {
+        if (event.keyCode == 13)// Entry event
+            LoadUserList();
+    }
+
+    function LoadUserList() {
+
+        SetPageWaiting(true);
+        $.get('@Url.Action("QueryUserList", "User")', {
+            filterField: $("#SelectedQuery").val(),
+            filterText: $.trim($("#txtQuery").val()),
+            currentPage: parseInt($("#currentPage").val())
+        }, function (response) {
+            SetPageWaiting(false);
+            response = JSON.parse(JSON.stringify(response));
+            if (!response.IsValid) {
+                processResponseError(response.ErrorMessage);
+            } else {
+                var htmlStr = "";
+                var UserList = JSON.parse(response.JsonObject);
+                if (UserList.length > 0) {
+                    $.each(UserList, function (idx, info) {
+                        htmlStr += '<tr class="listItem">';
+                        htmlStr += '  <td class="tdListLeft">' + info.LoginID + '</td>';
+                        htmlStr += '  <td class="tdListLeft">' + info.Name + '</td>';
+                        htmlStr += '  <td class="tdListLeft">' + info.Email + '</td>';
+                        htmlStr += '  <td class="tdListCenter">' + info.IsAdminDesc + '</td>';
+                        htmlStr += '  <td class="tdListCenter">' + parseDate(info.CreatedDate).format("yyyy-MM-dd") + '</td>';
+                        if ('@user.IsAdmin' == 'True'){
+                            htmlStr += '  <td class="tdListCenter"><img src="' + getRootPath() + '/Content/img/btn_edit.gif" class="cursor" onclick="btnEditUserClicked(' + info.ID + ')" /></td>';
+                            htmlStr += '  <td class="tdListCenter"><img src="' + getRootPath() + '/Content/img/btn_delete.gif" class="cursor" onclick="btnDeleteUserClicked(' + info.ID + ')" /></td>';
+                        }
+                        htmlStr += '</tr>';
+                    });
+                }else {
+                    htmlStr += '<tr class="listItem">';
+                    htmlStr += '    <td colspan="7" class="tdListCenter">No information</td>';
+                    htmlStr += '</tr>';
+                }
+                $("#ListBody").html(htmlStr);
+
+                SetTotalPage4Pager(response.TotalPages);
+            }
+        });
+    }
+
+    function btnEditUserClicked(id) {
+        InitDialogForm();
+        $("#trUpdateLoginPwd").show();
+        $("#trLoginPwd").hide();
+        $("#trReLoginPwd").hide();
+        $("#IsUpdatePassword").val(false);
+
+        $.get('@Url.Action("GetUser", "User")', {
+            id: id
+        }, function (response) {
+            response = JSON.parse(JSON.stringify(response));
+            if (!response.IsValid) {
+                processResponseError(response.ErrorMessage);
+            } else {
+                var info = JSON.parse(response.JsonObject);
+                $("#ID").val(info.ID);
+                $("#LoginID").val(info.LoginID);
+                setRadioChecked("IsAdmin", info.IsAdmin? 1:0);
+                $("#Name").val(info.Name);
+                $("#Email").val(info.Email);
+            }
+        });
+
+        $("#dialog-form-Add").dialog({ title: "Modify Information" });
+        $("#dialog-form-Add").dialog("open");
+    }
+
+    function btnDeleteUserClicked(id) {
+        jConfirm("Are you sure you want to delete this user?", "DELETE", function (result) {
+            if (result == true) {
+                $.post('@Url.Action("DeleteUser", "User")', {
+                    ID: id,
+                }, function (response) {
+                    response = JSON.parse(JSON.stringify(response));
+                    if (!response.IsValid) {
+                        processResponseError(response.ErrorMessage);
+                    } else {
+                        jAlert("Deleted Successfully", "DELETE", function () {
+                            $("#dialog-form-Add").dialog("close");
+                            LoadUserList();
+                        });
+                    }
+                });
+            }
+        });
+    }
+
+    function SaveUser() {
+
+        if(CheckAddForm() == false) return;
+
+        $.post('@Url.Action("SaveUser", "User")', {
+            ID: parseInt($("#ID").val()),
+            LoginID: $.trim($("#LoginID").val()),
+            LoginPwd: $.trim($("#LoginPwd").val()),
+            IsUpdatePassword: $("#IsUpdatePassword").val(),
+            Name: $.trim($("#Name").val()),
+            Email: $.trim($("#Email").val()),
+            IsAdmin: getRadioChecked("IsAdmin") == 1 ? true : false,
+        }, function (response) {
+            response = JSON.parse(JSON.stringify(response));
+            if (!response.IsValid) {
+                processResponseError(response.ErrorMessage);
+            } else {
+                jAlert("Saved Successfully", "SAVE", function () {
+                    $("#dialog-form-Add").dialog("close");
+                    LoadUserList();
+                });
+            }
+        });
+    }
+
+    function InitDialogForm() {
+        ClearRequired();
+
+        $("#ID").val(0);
+        $("#LoginID").val("");
+        $("#LoginPwd").val("");
+        $("#ReLoginPwd").val("");
+        $("#Name").val("");
+        $("#Email").val("");
+        setRadioChecked("IsAdmin", 0);
+
+        $("#IsUpdatePassword").val(true);//Add Dialog
+        $("#IsCheckedUpdateLoginPwd").prop("checked",false);
+        $("#trLoginPwd").show();
+        $("#trReLoginPwd").show();
+        $("#trUpdateLoginPwd").hide();
+    }
+
+    function btnEditLoginPwd(){
+        ClearRequired();
+
+        $("#LoginPwd").val("");
+        $("#ReLoginPwd").val("");
+
+        if($("#trLoginPwd").css("display")=="none"){
+            $("#IsUpdatePassword").val(true);
+            $("#trLoginPwd").show();
+            $("#trReLoginPwd").show();
+            $("#LoginPwd").focus();
+        }else{
+            $("#IsUpdatePassword").val(false);
+            $("#trLoginPwd").hide();
+            $("#trReLoginPwd").hide();
+        }
+    }
+
+    function CheckAddForm() {
+        ClearRequired();
+        var IsVerfiy = true;
+
+        var email = $.trim($("#Email").val());
+        if (email != "" && !(/^[\w\-\.]+[@@]{1}[\w\-\.]+(\.\w+)+$/.test(email))) {
+            $("#reqEmail").html("Not a valid email format");
+            $("#Email").focus();
+            IsVerfiy = false;
+        }
+
+        var name = $.trim($("#Name").val());
+        if (name == "") {
+            $("#reqName").html("Name cannot be empty");
+            $("#Name").focus();
+            IsVerfiy = false;
+        }
+
+        if ($("#IsUpdatePassword").val() == 'true') {
+
+            var loginPwd = $.trim($("#LoginPwd").val());
+            var reloginPwd = $.trim($("#ReLoginPwd").val());
+
+            if (loginPwd == "") {
+                $("#reqLoginPwd").html("Password can not be blank");
+                $("#LoginPwd").focus();
+                IsVerfiy = false;
+            }else if(reloginPwd == ""){
+                $("#reqReLoginPwd").html("Please confirm the password again");
+                $("#ReLoginPwd").focus();
+                IsVerfiy = false;
+            }else {
+                if (reloginPwd != loginPwd) {
+                    $("#reqReLoginPwd").html("The passwords are inconsistent, please re-enter");
+                    $("#ReLoginPwd").val("");
+                    $("#ReLoginPwd").focus();
+                    IsVerfiy = false;
+                }
+            }
+        }
+
+        var loginID = $.trim($("#LoginID").val());
+        if (loginID == "") {
+            $("#reqLoginID").html("Account cannot be empty");
+            $("#LoginID").focus();
+            IsVerfiy = false;
+        }else if(CheckUserExistedAjax() == true) {
+            IsVerfiy = false;
+        }
+
+        return IsVerfiy;
+    }
+
+    function CheckUserExistedAjax() {
+        var IsExisted = true;
+        $("#reqLoginID").html("");
+
+        $.ajax({
+            type: "get",
+            url: '@Url.Action("CheckUserLoginID", "User")',
+            data: {
+                ID: $("#ID").val(),
+                loginID: $.trim($("#LoginID").val())
+            },
+            secureuri: false,
+            dataType: 'json',
+            async: false,
+            success: function (response) {
+                if (response.IsValid == true) {
+                    if (response.JsonObject == "1") {
+                        $("#reqLoginID").html("Account already exists");
+                        $("#LoginID").focus();
+                    }
+                    else
+                        IsExisted = false;
+                }
+                else {
+                    processResponseError(response.ErrorMessage);
+                }
+            },
+            error: function () { jAlert("Error connecting to the server", "ERROR"); }
+        });
+        return IsExisted;
+    }
+</script>

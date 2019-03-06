@@ -1,0 +1,97 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>@Html.Raw(DatabaseObject.Domain.Constants.SYSTEM_NAME)</title>
+    <link href="~/Content/css/style.css" rel="stylesheet" type="text/css" />
+    <script src="~/Content/Scripts/jquery-1.11.0.js"></script>
+    <script src="~/Content/scripts/common.js"></script>
+</head>
+<body>
+    <!--header-->
+    <header class="loginHeaderBar">
+        <span class="headerTitle"><b>@Html.Raw(DatabaseObject.Domain.Constants.SYSTEM_NAME)</b></span>
+    </header>
+    <div class="mainFrame">
+        <div class="loginContent">
+            <table class="loginInfo" width="300" align="center" cellpadding="6" cellspacing="10" style="margin: 0 auto;">
+                <tr><td><span>Login Please</span></td></tr>
+                <tr><td></td></tr>
+                <tr><td></td></tr>
+                <tr>
+                    <td>
+                        <input type="text" class="loginEntryUser" id="loginEmail" placeholder="please enter your account" value="" />
+                    </td>
+                </tr>
+                <tr><td></td></tr>
+                <tr>
+                    <td>
+                        <input type="password" class="loginEntryPwd" id="loginPwd" placeholder="Please enter your password" />
+                    </td>
+                </tr>
+                <tr><td><label class="required" id="reqErrorMsg"></label></td></tr>
+                <tr><td></td></tr>
+                <tr><td></td></tr>
+                <tr>
+                    <td align="center">
+                        <button type="button" class="loginButton" id="btnLogin" />Login
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    @*footer*@
+    <footer>
+        <table style="width:inherit;">
+            <tr>
+                <td style="text-align:center; white-space:nowrap;">@Html.Raw(DatabaseObject.Domain.Constants.SYSTEM_NAME)</td>
+            </tr>
+        </table>
+    </footer>
+</body>
+</html>
+<script type="text/javascript">
+    $().ready(function () {
+        CenterizePage();
+    });
+
+    $(window).resize(function () {
+        CenterizePage();
+    });
+
+    function CenterizePage() {
+        var divHeight = $(".loginContent").height();
+        var clientHeight = $(this).height();
+
+        $(".loginContent").css("margin-top", (clientHeight - divHeight) / 2 + "px");
+    }
+
+    $("#btnLogin").click(function () {
+        $("#reqErrorMsg").html("");
+
+        var loginEmail = $.trim($("#loginEmail").val());
+        if (loginEmail == "") {
+            $("#reqErrorMsg").html("Login Account cannot be empty");
+            $("#loginEmail").focus();
+            return;
+        }
+
+        var loginPwd = $.trim($("#loginPwd").val());
+
+        $.post('@Url.Action("Login","Home")', {
+            loginID: loginEmail,
+            loginPwd: loginPwd
+        }, function (response) {
+            response = JSON.parse(JSON.stringify(response));
+            if (!response.IsValid)
+                $("#reqErrorMsg").html(response.ErrorMessage);
+            else
+            {
+                if ('@Model' != '')
+                    window.location = '@Model';
+                else
+                    window.location = '@Url.Action("UserList", "User")';
+            }
+        });
+    });
+</script>
