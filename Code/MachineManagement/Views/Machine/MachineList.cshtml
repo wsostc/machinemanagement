@@ -52,6 +52,7 @@
                 <td class="listTitle">IP</td>
                 <td class="listTitle">Server</td>
                 <td class="listTitle" width="110">Status</td>
+                <td class="listTitle" width="110">UserName</td>
                 <td class="listTitle">Latest Update Time</td>
                 <td class="listTitle" width="110">Comments</td>
                 <td class="listTitle" width="80">EDIT</td>
@@ -62,7 +63,7 @@
             </tr>
             <tbody id="ListBody"></tbody>
             <tr>
-                <td colspan="9" style="padding:5px;">
+                <td colspan="10" style="padding:5px;">
                     <div id="pager"></div>
                     <input type="hidden" id="totalPages" value="1" />
                     <input type="hidden" id="currentPage" value="1" />
@@ -221,6 +222,7 @@
                         htmlStr += '  <td class="tdListCenter">' + '</td>';
                         htmlStr += '  <td class="tdListCenter">' + '</td>';
                         htmlStr += '  <td class="tdListCenter">' + '</td>';
+                        htmlStr += '  <td class="tdListCenter">' + '</td>';
                         htmlStr += '  <td class="tdListCenter"><img src="' + getRootPath() + '/Content/img/btn_edit.gif" class="cursor" onclick="btnEditUserClicked(' + info.ID + ')" /></td>';
                         if ('@user.IsAdmin' == 'True') {
                             htmlStr += '  <td class="tdListCenter"><img src="' + getRootPath() + '/Content/img/btn_delete.gif" class="cursor" onclick="btnDeleteUserClicked(' + info.ID + ')" /></td>';
@@ -229,7 +231,7 @@
                     });
                 }else {
                     htmlStr += '<tr class="listItem">';
-                    htmlStr += '    <td colspan="8" class="tdListCenter">No information</td>';
+                    htmlStr += '    <td colspan="10" class="tdListCenter">No information</td>';
                     htmlStr += '</tr>';
                 }
                 $("#ListBody").html(htmlStr);
