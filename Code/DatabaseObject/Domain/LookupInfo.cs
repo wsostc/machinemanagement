@@ -49,18 +49,18 @@ namespace DatabaseObject.Domain
     {
         public const int ACTIVE = 1;
         public const int USING = 2;
-        public const int LOST = 99;
+        public const int FAIL = 99;
 
         public static string GetDesc(int id)
         {
             switch (id)
             {
                 case ACTIVE:
-                    return "active";
+                    return "Active";
                 case USING:
-                    return "using";
+                    return "Using";
                 default:
-                    return "lost";
+                    return "Fail";
             }
         }
     }

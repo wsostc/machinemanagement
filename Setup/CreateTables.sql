@@ -168,9 +168,9 @@ CREATE TABLE [dbo].[lkpStatus](
     CONSTRAINT PK_lkpStatus PRIMARY KEY ([ID]),
 )
 GO
-INSERT INTO [lkpStatus] VALUES(1,'active')
-INSERT INTO [lkpStatus] VALUES(2,'using')
-INSERT INTO [lkpStatus] VALUES(99,'lost')
+INSERT INTO [lkpStatus] VALUES(1,'Active')
+INSERT INTO [lkpStatus] VALUES(2,'Using')
+INSERT INTO [lkpStatus] VALUES(99,'Fail')
 GO
 
 CREATE TABLE [dbo].[tblMachine](
